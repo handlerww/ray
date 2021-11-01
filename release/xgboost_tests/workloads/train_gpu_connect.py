@@ -32,23 +32,21 @@ if __name__ == "__main__":
         cpus_per_actor=4,
         gpus_per_actor=1)
 
-    @ray.remote
-    def train():
-        os.environ["RXGB_PLACEMENT_GROUP_TIMEOUT_S"] = "1200"
 
-        train_ray(
-            path="/data/classification.parquet",
-            num_workers=4,
-            num_boost_rounds=100,
-            num_files=25,
-            regression=False,
-            use_gpu=True,
-            ray_params=ray_params,
-            xgboost_params=None,
-        )
 
     start = time.time()
-    ray.get(train.remote())
+
+    train_ray(
+        path="/data/classification.parquet",
+        num_workers=4,
+        num_boost_rounds=100,
+        num_files=25,
+        regression=False,
+        use_gpu=True,
+        ray_params=ray_params,
+        xgboost_params=None,
+    )
+
     taken = time.time() - start
 
     result = {
