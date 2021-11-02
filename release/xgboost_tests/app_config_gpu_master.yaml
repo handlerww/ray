@@ -6,7 +6,7 @@ debian_packages:
 python:
   pip_packages:
     - pytest
-    - git+git://github.com/ray-project/xgboost_ray@master#egg=xgboost_ray # Install latest master
+    - git+https://github.com/ray-project/xgboost_ray.git#egg=xgboost_ray # Install latest master
     - petastorm
   conda_packages: []
 
