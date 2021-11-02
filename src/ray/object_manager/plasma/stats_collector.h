@@ -24,7 +24,7 @@ namespace plasma {
 // ObjectStatsCollector subscribes to plasma store state changes
 // and calculate the store statistics.
 //
-// TODO(scv119): move other stats from PlasmaStore/ObjectStore/
+// TODO(scv119): move other stats from FederatedStore/ObjectStore/
 // ObjectLifeCycleManager into this class.
 class ObjectStatsCollector {
  public:

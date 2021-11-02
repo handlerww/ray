@@ -51,9 +51,9 @@ enum class PlasmaError;
 
 using flatbuf::PlasmaError;
 
-class PlasmaStore {
+class FederatedStore {
  public:
-  PlasmaStore(instrumented_io_context &main_service, IAllocator &allocator,
+  FederatedStore(instrumented_io_context &main_service, IAllocator &allocator,
               const std::string &socket_name, uint32_t delay_on_oom_ms,
               float object_spilling_threshold,
               ray::SpillObjectsCallback spill_objects_callback,
@@ -61,7 +61,7 @@ class PlasmaStore {
               ray::AddObjectCallback add_object_callback,
               ray::DeleteObjectCallback delete_object_callback);
 
-  ~PlasmaStore();
+  ~FederatedStore();
 
   /// Start this store.
   void Start();
@@ -176,13 +176,13 @@ class PlasmaStore {
   void ReleaseObject(const ObjectID &object_id, const std::shared_ptr<Client> &client)
       EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  /// Connect a new client to the PlasmaStore.
+  /// Connect a new client to the FederatedStore.
   ///
   /// \param error The error code from the acceptor.
   void ConnectClient(const boost::system::error_code &error)
       EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  /// Disconnect a client from the PlasmaStore.
+  /// Disconnect a client from the FederatedStore.
   ///
   /// \param client The client that is disconnected.
   void DisconnectClient(const std::shared_ptr<Client> &client)

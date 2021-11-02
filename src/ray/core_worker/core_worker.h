@@ -30,7 +30,7 @@
 #include "ray/core_worker/profiling.h"
 #include "ray/core_worker/reference_count.h"
 #include "ray/core_worker/store_provider/memory_store/memory_store.h"
-#include "ray/core_worker/store_provider/plasma_store_provider.h"
+#include "ray/core_worker/store_provider/plasma_store/plasma_store_provider.h"
 #include "ray/core_worker/transport/direct_actor_transport.h"
 #include "ray/core_worker/transport/direct_task_transport.h"
 #include "ray/gcs/gcs_client/gcs_client.h"
@@ -1137,7 +1137,7 @@ class CoreWorker : public rpc::CoreWorkerServiceHandler {
                      bool *is_application_level_error);
 
   /// Put an object in the local plasma store.
-  Status PutInLocalPlasmaStore(const RayObject &object, const ObjectID &object_id,
+  Status PutInLocalFederatedStore(const RayObject &object, const ObjectID &object_id,
                                bool pin_object);
 
   /// Execute a local mode task (runs normal ExecuteTask)
@@ -1329,7 +1329,7 @@ class CoreWorker : public rpc::CoreWorkerServiceHandler {
   std::shared_ptr<CoreWorkerMemoryStore> memory_store_;
 
   /// Plasma store interface.
-  std::shared_ptr<CoreWorkerPlasmaStoreProvider> plasma_store_provider_;
+  std::shared_ptr<CoreWorkerFederatedStoreProvider> plasma_store_provider_;
 
   std::unique_ptr<FutureResolver> future_resolver_;
 

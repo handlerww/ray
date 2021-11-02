@@ -29,12 +29,12 @@ ObjectStoreRunner::ObjectStoreRunner(const ObjectManagerConfig &config,
                                      std::function<void()> object_store_full_callback,
                                      AddObjectCallback add_object_callback,
                                      DeleteObjectCallback delete_object_callback) {
-  plasma::plasma_store_runner.reset(new plasma::PlasmaStoreRunner(
+  plasma::plasma_store_runner.reset(new plasma::FederatedStoreRunner(
       config.store_socket_name, config.object_store_memory, config.huge_pages,
       config.plasma_directory, config.fallback_directory));
   // Initialize object store.
   store_thread_ =
-      std::thread(&plasma::PlasmaStoreRunner::Start, plasma::plasma_store_runner.get(),
+      std::thread(&plasma::FederatedStoreRunner::Start, plasma::plasma_store_runner.get(),
                   spill_objects_callback, object_store_full_callback, add_object_callback,
                   delete_object_callback);
   // Sleep for sometime until the store is working. This can suppress some

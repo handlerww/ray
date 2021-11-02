@@ -15,7 +15,7 @@ namespace internal {
 void SetMallocGranularity(int value);
 }
 
-PlasmaStoreRunner::PlasmaStoreRunner(std::string socket_name, int64_t system_memory,
+FederatedStoreRunner::FederatedStoreRunner(std::string socket_name, int64_t system_memory,
                                      bool hugepages_enabled, std::string plasma_directory,
                                      std::string fallback_directory)
     : hugepages_enabled_(hugepages_enabled) {
@@ -78,7 +78,7 @@ PlasmaStoreRunner::PlasmaStoreRunner(std::string socket_name, int64_t system_mem
   fallback_directory_ = fallback_directory;
 }
 
-void PlasmaStoreRunner::Start(ray::SpillObjectsCallback spill_objects_callback,
+void FederatedStoreRunner::Start(ray::SpillObjectsCallback spill_objects_callback,
                               std::function<void()> object_store_full_callback,
                               ray::AddObjectCallback add_object_callback,
                               ray::DeleteObjectCallback delete_object_callback) {
@@ -88,7 +88,7 @@ void PlasmaStoreRunner::Start(ray::SpillObjectsCallback spill_objects_callback,
     absl::MutexLock lock(&store_runner_mutex_);
     allocator_ = std::make_unique<PlasmaAllocator>(plasma_directory_, fallback_directory_,
                                                    hugepages_enabled_, system_memory_);
-    store_.reset(new PlasmaStore(main_service_, *allocator_, socket_name_,
+    store_.reset(new FederatedStore(main_service_, *allocator_, socket_name_,
                                  RayConfig::instance().object_store_full_delay_ms(),
                                  RayConfig::instance().object_spilling_threshold(),
                                  spill_objects_callback, object_store_full_callback,
@@ -99,7 +99,7 @@ void PlasmaStoreRunner::Start(ray::SpillObjectsCallback spill_objects_callback,
   Shutdown();
 }
 
-void PlasmaStoreRunner::Stop() {
+void FederatedStoreRunner::Stop() {
   absl::MutexLock lock(&store_runner_mutex_);
   if (store_) {
     store_->Stop();
@@ -107,7 +107,7 @@ void PlasmaStoreRunner::Stop() {
   main_service_.stop();
 }
 
-void PlasmaStoreRunner::Shutdown() {
+void FederatedStoreRunner::Shutdown() {
   absl::MutexLock lock(&store_runner_mutex_);
   if (store_) {
     store_->Stop();
@@ -115,17 +115,17 @@ void PlasmaStoreRunner::Shutdown() {
   }
 }
 
-bool PlasmaStoreRunner::IsPlasmaObjectSpillable(const ObjectID &object_id) {
+bool FederatedStoreRunner::IsPlasmaObjectSpillable(const ObjectID &object_id) {
   return store_->IsObjectSpillable(object_id);
 }
 
-int64_t PlasmaStoreRunner::GetConsumedBytes() { return store_->GetConsumedBytes(); }
+int64_t FederatedStoreRunner::GetConsumedBytes() { return store_->GetConsumedBytes(); }
 
-int64_t PlasmaStoreRunner::GetFallbackAllocated() const {
+int64_t FederatedStoreRunner::GetFallbackAllocated() const {
   absl::MutexLock lock(&store_runner_mutex_);
   return allocator_ ? allocator_->FallbackAllocated() : 0;
 }
 
-std::unique_ptr<PlasmaStoreRunner> plasma_store_runner;
+std::unique_ptr<FederatedStoreRunner> plasma_store_runner;
 
 }  // namespace plasma

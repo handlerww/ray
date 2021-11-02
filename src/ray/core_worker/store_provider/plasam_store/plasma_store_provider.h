@@ -81,18 +81,18 @@ class TrackedBuffer : public Buffer {
 
 /// The class provides implementations for accessing plasma store, which includes both
 /// local and remote stores. Local access goes is done via a
-/// CoreWorkerLocalPlasmaStoreProvider and remote access goes through the raylet.
+/// CoreWorkerLocalFederatedStoreProvider and remote access goes through the raylet.
 /// See `CoreWorkerStoreProvider` for the semantics of public methods.
-class CoreWorkerPlasmaStoreProvider {
+class CoreWorkerFederatedStoreProvider {
  public:
-  CoreWorkerPlasmaStoreProvider(
+  CoreWorkerFederatedStoreProvider(
       const std::string &store_socket,
       const std::shared_ptr<raylet::RayletClient> raylet_client,
       const std::shared_ptr<ReferenceCounter> reference_counter,
       std::function<Status()> check_signals, bool warmup,
       std::function<std::string()> get_current_call_site = nullptr);
 
-  ~CoreWorkerPlasmaStoreProvider();
+  ~CoreWorkerFederatedStoreProvider();
 
   /// Create and seal an object.
   ///
@@ -187,7 +187,7 @@ class CoreWorkerPlasmaStoreProvider {
   /// \param[out] got_exception Set to true if any of the fetched objects contained an
   /// exception.
   /// \return Status.
-  Status FetchAndGetFromPlasmaStore(
+  Status FetchAndGetFromFederatedStore(
       absl::flat_hash_set<ObjectID> &remaining, const std::vector<ObjectID> &batch_ids,
       int64_t timeout_ms, bool fetch_only, bool in_direct_call_task,
       const TaskID &task_id,

@@ -68,7 +68,7 @@ ray::ObjectID GetCreateRequestObjectId(const std::vector<uint8_t> &message) {
 }
 }  // namespace
 
-PlasmaStore::PlasmaStore(instrumented_io_context &main_service, IAllocator &allocator,
+FederatedStore::FederatedStore(instrumented_io_context &main_service, IAllocator &allocator,
                          const std::string &socket_name, uint32_t delay_on_oom_ms,
                          float object_spilling_threshold,
                          ray::SpillObjectsCallback spill_objects_callback,
@@ -112,18 +112,18 @@ PlasmaStore::PlasmaStore(instrumented_io_context &main_service, IAllocator &allo
 }
 
 // TODO(pcm): Get rid of this destructor by using RAII to clean up data.
-PlasmaStore::~PlasmaStore() {}
+FederatedStore::~FederatedStore() {}
 
-void PlasmaStore::Start() {
+void FederatedStore::Start() {
   // Start listening for clients.
   DoAccept();
 }
 
-void PlasmaStore::Stop() { acceptor_.close(); }
+void FederatedStore::Stop() { acceptor_.close(); }
 
 // If this client is not already using the object, add the client to the
 // object's list of clients, otherwise do nothing.
-void PlasmaStore::AddToClientObjectIds(const ObjectID &object_id,
+void FederatedStore::AddToClientObjectIds(const ObjectID &object_id,
                                        const std::shared_ptr<ClientInterface> &client) {
   // Check if this client is already using the object.
   auto &object_ids = client->GetObjectIDs();
@@ -135,7 +135,7 @@ void PlasmaStore::AddToClientObjectIds(const ObjectID &object_id,
   client->MarkObjectAsUsed(object_id);
 }
 
-PlasmaError PlasmaStore::HandleCreateObjectRequest(const std::shared_ptr<Client> &client,
+PlasmaError FederatedStore::HandleCreateObjectRequest(const std::shared_ptr<Client> &client,
                                                    const std::vector<uint8_t> &message,
                                                    bool fallback_allocator,
                                                    PlasmaObject *object,
@@ -176,7 +176,7 @@ PlasmaError PlasmaStore::HandleCreateObjectRequest(const std::shared_ptr<Client>
   return error;
 }
 
-PlasmaError PlasmaStore::CreateObject(const ray::ObjectInfo &object_info,
+PlasmaError FederatedStore::CreateObject(const ray::ObjectInfo &object_info,
                                       fb::ObjectSource source,
                                       const std::shared_ptr<Client> &client,
                                       bool fallback_allocator, PlasmaObject *result) {
@@ -192,7 +192,7 @@ PlasmaError PlasmaStore::CreateObject(const ray::ObjectInfo &object_info,
   return PlasmaError::OK;
 }
 
-void PlasmaStore::ReturnFromGet(const std::shared_ptr<GetRequest> &get_request) {
+void FederatedStore::ReturnFromGet(const std::shared_ptr<GetRequest> &get_request) {
   // If the get request is already removed, do no-op. This can happen because the boost
   // timer is not atomic. See https://github.com/ray-project/ray/pull/15071.
   if (get_request->IsRemoved()) {
@@ -235,13 +235,13 @@ void PlasmaStore::ReturnFromGet(const std::shared_ptr<GetRequest> &get_request) 
   }
 }
 
-void PlasmaStore::ProcessGetRequest(const std::shared_ptr<Client> &client,
+void FederatedStore::ProcessGetRequest(const std::shared_ptr<Client> &client,
                                     const std::vector<ObjectID> &object_ids,
                                     int64_t timeout_ms, bool is_from_worker) {
   get_request_queue_.AddRequest(client, object_ids, timeout_ms, is_from_worker);
 }
 
-int PlasmaStore::RemoveFromClientObjectIds(const ObjectID &object_id,
+int FederatedStore::RemoveFromClientObjectIds(const ObjectID &object_id,
                                            const std::shared_ptr<Client> &client) {
   auto &object_ids = client->GetObjectIDs();
   auto it = object_ids.find(object_id);
@@ -258,7 +258,7 @@ int PlasmaStore::RemoveFromClientObjectIds(const ObjectID &object_id,
   }
 }
 
-void PlasmaStore::ReleaseObject(const ObjectID &object_id,
+void FederatedStore::ReleaseObject(const ObjectID &object_id,
                                 const std::shared_ptr<Client> &client) {
   auto entry = object_lifecycle_mgr_.GetObject(object_id);
   RAY_CHECK(entry != nullptr);
@@ -266,7 +266,7 @@ void PlasmaStore::ReleaseObject(const ObjectID &object_id,
   RAY_CHECK(RemoveFromClientObjectIds(object_id, client) == 1);
 }
 
-void PlasmaStore::SealObjects(const std::vector<ObjectID> &object_ids) {
+void FederatedStore::SealObjects(const std::vector<ObjectID> &object_ids) {
   for (size_t i = 0; i < object_ids.size(); ++i) {
     RAY_LOG(DEBUG) << "sealing object " << object_ids[i];
     auto entry = object_lifecycle_mgr_.SealObject(object_ids[i]);
@@ -279,7 +279,7 @@ void PlasmaStore::SealObjects(const std::vector<ObjectID> &object_ids) {
   }
 }
 
-int PlasmaStore::AbortObject(const ObjectID &object_id,
+int FederatedStore::AbortObject(const ObjectID &object_id,
                              const std::shared_ptr<Client> &client) {
   auto &object_ids = client->GetObjectIDs();
   auto it = object_ids.find(object_id);
@@ -294,19 +294,19 @@ int PlasmaStore::AbortObject(const ObjectID &object_id,
   return 1;
 }
 
-void PlasmaStore::ConnectClient(const boost::system::error_code &error) {
+void FederatedStore::ConnectClient(const boost::system::error_code &error) {
   if (!error) {
     // Accept a new local client and dispatch it to the node manager.
     auto new_connection = Client::Create(
         // NOLINTNEXTLINE : handler must be of boost::AcceptHandler type.
-        boost::bind(&PlasmaStore::ProcessMessage, this, ph::_1, ph::_2, ph::_3),
+        boost::bind(&FederatedStore::ProcessMessage, this, ph::_1, ph::_2, ph::_3),
         std::move(socket_));
   }
   // We're ready to accept another client.
   DoAccept();
 }
 
-void PlasmaStore::DisconnectClient(const std::shared_ptr<Client> &client) {
+void FederatedStore::DisconnectClient(const std::shared_ptr<Client> &client) {
   client->Close();
   RAY_LOG(DEBUG) << "Disconnecting client on fd " << client;
   // Release all the objects that the client was using.
@@ -338,7 +338,7 @@ void PlasmaStore::DisconnectClient(const std::shared_ptr<Client> &client) {
   create_request_queue_.RemoveDisconnectedClientRequests(client);
 }
 
-Status PlasmaStore::ProcessMessage(const std::shared_ptr<Client> &client,
+Status FederatedStore::ProcessMessage(const std::shared_ptr<Client> &client,
                                    fb::MessageType type,
                                    const std::vector<uint8_t> &message) {
   absl::MutexLock lock(&mutex_);
@@ -458,12 +458,12 @@ Status PlasmaStore::ProcessMessage(const std::shared_ptr<Client> &client,
   return Status::OK();
 }
 
-void PlasmaStore::DoAccept() {
-  acceptor_.async_accept(socket_, boost::bind(&PlasmaStore::ConnectClient, this,
+void FederatedStore::DoAccept() {
+  acceptor_.async_accept(socket_, boost::bind(&FederatedStore::ConnectClient, this,
                                               boost::asio::placeholders::error));
 }
 
-void PlasmaStore::ProcessCreateRequests() {
+void FederatedStore::ProcessCreateRequests() {
   // Only try to process requests if the timer is not set. If the timer is set,
   // that means that the first request is currently not serviceable because
   // there is not enough memory. In that case, we should wait for the timer to
@@ -497,7 +497,7 @@ void PlasmaStore::ProcessCreateRequests() {
   }
 }
 
-void PlasmaStore::ReplyToCreateClient(const std::shared_ptr<Client> &client,
+void FederatedStore::ReplyToCreateClient(const std::shared_ptr<Client> &client,
                                       const ObjectID &object_id, uint64_t req_id) {
   PlasmaObject result = {};
   PlasmaError error;
@@ -513,9 +513,9 @@ void PlasmaStore::ReplyToCreateClient(const std::shared_ptr<Client> &client,
   }
 }
 
-int64_t PlasmaStore::GetConsumedBytes() { return total_consumed_bytes_; }
+int64_t FederatedStore::GetConsumedBytes() { return total_consumed_bytes_; }
 
-bool PlasmaStore::IsObjectSpillable(const ObjectID &object_id) {
+bool FederatedStore::IsObjectSpillable(const ObjectID &object_id) {
   absl::MutexLock lock(&mutex_);
   auto entry = object_lifecycle_mgr_.GetObject(object_id);
   if (!entry) {
@@ -525,14 +525,14 @@ bool PlasmaStore::IsObjectSpillable(const ObjectID &object_id) {
   return entry->Sealed() && entry->GetRefCount() == 1;
 }
 
-void PlasmaStore::PrintDebugDump() const {
+void FederatedStore::PrintDebugDump() const {
   absl::MutexLock lock(&mutex_);
   RAY_LOG(INFO) << GetDebugDump();
   stats_timer_ = execute_after(io_context_, [this]() { PrintDebugDump(); },
                                RayConfig::instance().event_stats_print_interval_ms());
 }
 
-std::string PlasmaStore::GetDebugDump() const {
+std::string FederatedStore::GetDebugDump() const {
   std::stringstream buffer;
   buffer << "========== Plasma store: =================\n";
   buffer << "Current usage: " << (allocator_.Allocated() / 1e9) << " / "

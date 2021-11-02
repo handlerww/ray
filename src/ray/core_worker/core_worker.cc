@@ -564,7 +564,7 @@ CoreWorker::CoreWorker(const CoreWorkerOptions &options, const WorkerID &worker_
         RayConfig::instance().raylet_death_check_interval_milliseconds());
   }
 
-  plasma_store_provider_.reset(new CoreWorkerPlasmaStoreProvider(
+  plasma_store_provider_.reset(new CoreWorkerFederatedStoreProvider(
       options_.store_socket, local_raylet_client_, reference_counter_,
       options_.check_signals,
       /*warmup=*/
@@ -607,7 +607,7 @@ CoreWorker::CoreWorker(const CoreWorkerOptions &options, const WorkerID &worker_
       memory_store_, reference_counter_,
       /*put_in_local_plasma_callback=*/
       [this](const RayObject &object, const ObjectID &object_id) {
-        RAY_CHECK_OK(PutInLocalPlasmaStore(object, object_id, /*pin_object=*/true));
+        RAY_CHECK_OK(PutInLocalFederatedStore(object, object_id, /*pin_object=*/true));
       },
       /* retry_task_callback= */
       [this](TaskSpecification &spec, bool delay) {
@@ -1145,7 +1145,7 @@ Status CoreWorker::Put(const RayObject &object,
   return status;
 }
 
-Status CoreWorker::PutInLocalPlasmaStore(const RayObject &object,
+Status CoreWorker::PutInLocalFederatedStore(const RayObject &object,
                                          const ObjectID &object_id, bool pin_object) {
   bool object_exists;
   RAY_RETURN_NOT_OK(plasma_store_provider_->Put(
@@ -1183,7 +1183,7 @@ Status CoreWorker::Put(const RayObject &object,
     RAY_CHECK(memory_store_->Put(object, object_id));
     return Status::OK();
   }
-  return PutInLocalPlasmaStore(object, object_id, pin_object);
+  return PutInLocalFederatedStore(object, object_id, pin_object);
 }
 
 Status CoreWorker::CreateOwned(const std::shared_ptr<Buffer> &metadata,

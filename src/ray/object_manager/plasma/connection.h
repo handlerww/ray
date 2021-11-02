@@ -15,7 +15,7 @@ enum class MessageType : int64_t;
 
 class Client;
 
-using PlasmaStoreMessageHandler = std::function<ray::Status(
+using FederatedStoreMessageHandler = std::function<ray::Status(
     std::shared_ptr<Client>, flatbuf::MessageType, const std::vector<uint8_t> &)>;
 
 class ClientInterface {
@@ -31,7 +31,7 @@ class ClientInterface {
 /// Contains all information that is associated with a Plasma store client.
 class Client : public ray::ClientConnection, public ClientInterface {
  public:
-  static std::shared_ptr<Client> Create(PlasmaStoreMessageHandler message_handler,
+  static std::shared_ptr<Client> Create(FederatedStoreMessageHandler message_handler,
                                         ray::local_stream_socket &&socket);
 
   ray::Status SendFd(MEMFD_TYPE fd) override;

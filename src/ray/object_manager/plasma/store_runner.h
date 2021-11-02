@@ -10,9 +10,9 @@
 
 namespace plasma {
 
-class PlasmaStoreRunner {
+class FederatedStoreRunner {
  public:
-  PlasmaStoreRunner(std::string socket_name, int64_t system_memory,
+  FederatedStoreRunner(std::string socket_name, int64_t system_memory,
                     bool hugepages_enabled, std::string plasma_directory,
                     std::string fallback_directory);
   void Start(ray::SpillObjectsCallback spill_objects_callback,
@@ -28,7 +28,7 @@ class PlasmaStoreRunner {
 
   void GetAvailableMemoryAsync(std::function<void(size_t)> callback) const {
     main_service_.post([this, callback]() { store_->GetAvailableMemory(callback); },
-                       "PlasmaStoreRunner.GetAvailableMemory");
+                       "FederatedStoreRunner.GetAvailableMemory");
   }
 
  private:
@@ -41,7 +41,7 @@ class PlasmaStoreRunner {
   std::string fallback_directory_;
   mutable instrumented_io_context main_service_;
   std::unique_ptr<PlasmaAllocator> allocator_;
-  std::unique_ptr<PlasmaStore> store_;
+  std::unique_ptr<FederatedStore> store_;
 };
 
 // We use a global variable for Plasma Store instance here because:
@@ -49,6 +49,6 @@ class PlasmaStoreRunner {
 // 2) The thirdparty dlmalloc library cannot be contained in a local variable,
 //    so even we use a local variable for plasma store, it does not provide
 //    better isolation.
-extern std::unique_ptr<PlasmaStoreRunner> plasma_store_runner;
+extern std::unique_ptr<FederatedStoreRunner> plasma_store_runner;
 
 }  // namespace plasma

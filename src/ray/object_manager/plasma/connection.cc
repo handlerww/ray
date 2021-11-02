@@ -53,7 +53,7 @@ Client::Client(ray::MessageHandler &message_handler, ray::local_stream_socket &&
                             object_store_message_enum,
                             static_cast<int64_t>(MessageType::PlasmaDisconnectClient)) {}
 
-std::shared_ptr<Client> Client::Create(PlasmaStoreMessageHandler message_handler,
+std::shared_ptr<Client> Client::Create(FederatedStoreMessageHandler message_handler,
                                        ray::local_stream_socket &&socket) {
   ray::MessageHandler ray_message_handler =
       [message_handler](std::shared_ptr<ray::ClientConnection> client,
