@@ -38,7 +38,7 @@
   run:
     use_connect: True
     autosuspend_mins: 20
-    timeout: 1200
+    timeout: 1800
     script: python workloads/train_gpu_connect.py
 
 - name: train_gpu_connect_master
@@ -49,7 +49,7 @@
   run:
     use_connect: True
     autosuspend_mins: 20
-    timeout: 1200
+    timeout: 1800
     script: python workloads/train_gpu_connect.py
 
 - name: distributed_api_test
